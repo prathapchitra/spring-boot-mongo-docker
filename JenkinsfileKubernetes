@@ -15,10 +15,13 @@ node {
     }
 
     stage('Push Docker Image') {
-        withCredentials([string(credentialsId: 'DOCKER_HUB_PASSWORD', variable: 'DOCKER_PASSWORD')]) {
-            sh "echo ${DOCKER_PASSWORD} | docker login -u cprathap --password-stdin"
+        withCredentials([usernamePassword(credentialsId: 'DOCKER_HUB_PASSWORD', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+            sh '''
+                echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                docker push cprathap/spring-boot-mongo
+                docker logout
+            '''
         }
-        sh 'docker push cprathap/spring-boot-mongo'
     }
 
     stage("Deploy To Kubernetes Cluster") {
