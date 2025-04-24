@@ -53,12 +53,11 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 script {
-                    // Replace image in deployment YAML
-                    sh "sed -i 's|image: .*|image: ${DOCKER_IMAGE}|' k8s-manifests/deployment.yaml"
+                    // Replace image in deployment YAML with the Docker image
+                    sh "sed -i 's|image: .*|image: ${DOCKER_IMAGE}|' springBootMongo.yml"
 
-                    // Apply Kubernetes manifests
-                    sh "kubectl apply -f k8s-manifests/deployment.yaml"
-                    sh "kubectl apply -f k8s-manifests/service.yaml"
+                    // Apply the Kubernetes manifest using the new image
+                    sh "kubectl apply -f springBootMongo.yml"
                 }
             }
         }
