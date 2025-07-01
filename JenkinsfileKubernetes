@@ -6,18 +6,33 @@ pipeline {
         VERSION = "v1.0.${BUILD_NUMBER}"
         DOCKER_IMAGE = "${IMAGE_NAME}:${VERSION}"
         LATEST_IMAGE = "${IMAGE_NAME}:latest"
-        K8S_DEPLOYMENT = 'spring-boot-app'     // adjust if your app name differs
+        K8S_DEPLOYMENT = 'spring-boot-app'
         K8S_NAMESPACE = 'default'
     }
 
     tools {
         maven 'Maven-3.8.7'
+        sonarScanner 'SonarScanner' // Make sure this matches Jenkins Global Tool name
     }
 
     stages {
         stage('Clone Repository') {
             steps {
                 git credentialsId: 'GIT_CREDENTIALS', url: 'https://github.com/prathapchitra/spring-boot-mongo-docker.git', branch: 'master'
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('SonarQube') {
+                    sh """
+                        sonar-scanner \
+                          -Dsonar.projectKey=spring-boot-mongo \
+                          -Dsonar.sources=src \
+                          -Dsonar.java.binaries=target \
+                          -Dsonar.projectVersion=${VERSION}
+                    """
+                }
             }
         }
 
@@ -53,10 +68,7 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 script {
-                    // Replace image in deployment YAML with the Docker image
                     sh "sed -i 's|image: .*|image: ${DOCKER_IMAGE}|' springBootMongo.yml"
-
-                    // Apply the Kubernetes manifest using the new image
                     sh "kubectl apply -f springBootMongo.yml"
                 }
             }
