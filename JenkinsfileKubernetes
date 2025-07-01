@@ -12,7 +12,7 @@ pipeline {
 
     tools {
         maven 'Maven-3.8.7'
-        sonarScanner 'SonarScanner' // Make sure this matches Jenkins Global Tool name
+        sonarScanner 'SonarScanner' // Make sure this is configured in Jenkins tools
     }
 
     stages {
@@ -25,13 +25,13 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('SonarQube') {
-                    sh """
+                    sh '''
                         sonar-scanner \
                           -Dsonar.projectKey=spring-boot-mongo \
                           -Dsonar.sources=src \
                           -Dsonar.java.binaries=target \
-                          -Dsonar.projectVersion=${VERSION}
-                    """
+                          -Dsonar.projectVersion=$VERSION
+                    '''
                 }
             }
         }
@@ -44,33 +44,27 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                script {
-                    sh "docker build -t ${DOCKER_IMAGE} -t ${LATEST_IMAGE} ."
-                }
+                sh "docker build -t ${DOCKER_IMAGE} -t ${LATEST_IMAGE} ."
             }
         }
 
         stage('Push Docker Image') {
             steps {
-                script {
-                    withCredentials([usernamePassword(credentialsId: 'DOCKER_HUB_PASSWORD', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                        sh '''
-                            echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-                            docker push ${DOCKER_IMAGE}
-                            docker push ${LATEST_IMAGE}
-                            docker logout
-                        '''
-                    }
+                withCredentials([usernamePassword(credentialsId: 'DOCKER_HUB_PASSWORD', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh '''
+                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                        docker push ${DOCKER_IMAGE}
+                        docker push ${LATEST_IMAGE}
+                        docker logout
+                    '''
                 }
             }
         }
 
         stage('Deploy to Kubernetes') {
             steps {
-                script {
-                    sh "sed -i 's|image: .*|image: ${DOCKER_IMAGE}|' springBootMongo.yml"
-                    sh "kubectl apply -f springBootMongo.yml"
-                }
+                sh "sed -i 's|image: .*|image: ${DOCKER_IMAGE}|' springBootMongo.yml"
+                sh "kubectl apply -f springBootMongo.yml"
             }
         }
 
