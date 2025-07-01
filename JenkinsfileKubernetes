@@ -11,22 +11,27 @@ pipeline {
     }
 
     tools {
-        maven 'Maven-3.8.7' // ✅ only Maven here
+        maven 'Maven-3.8.7' // Use Jenkins-installed Maven
+    }
+
+    options {
+        timeout(time: 30, unit: 'MINUTES') // Optional: Set max pipeline time
     }
 
     stages {
-
         stage('Clone Repository') {
             steps {
-                git credentialsId: 'GIT_CREDENTIALS', url: 'https://github.com/prathapchitra/spring-boot-mongo-docker.git', branch: 'master'
+                git credentialsId: 'GIT_CREDENTIALS',
+                    url: 'https://github.com/prathapchitra/spring-boot-mongo-docker.git',
+                    branch: 'master'
             }
         }
 
         stage('SonarQube Analysis') {
             steps {
-                withSonarQubeEnv('Sonar') {
+                withSonarQubeEnv('Sonar') { // Ensure this matches Jenkins configuration
                     sh '''
-                        ./mvnw clean verify sonar:sonar \
+                        mvn clean verify sonar:sonar \
                           -Dsonar.projectKey=spring-boot-mongo \
                           -Dsonar.projectName=spring-boot-mongo \
                           -Dsonar.projectVersion=$VERSION \
@@ -36,9 +41,17 @@ pipeline {
             }
         }
 
+        stage('Wait for SonarQube Quality Gate') {
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+
         stage('Build Application') {
             steps {
-                sh 'mvn clean package'
+                sh 'mvn package'
             }
         }
 
@@ -53,7 +66,11 @@ pipeline {
         stage('Push Docker Image') {
             steps {
                 script {
-                    withCredentials([usernamePassword(credentialsId: 'DOCKER_HUB_PASSWORD', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    withCredentials([usernamePassword(
+                        credentialsId: 'DOCKER_HUB_PASSWORD',
+                        usernameVariable: 'DOCKER_USER',
+                        passwordVariable: 'DOCKER_PASS'
+                    )]) {
                         sh '''
                             echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
                             docker push ${DOCKER_IMAGE}
