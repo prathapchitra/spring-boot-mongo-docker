@@ -12,19 +12,20 @@ pipeline {
 
     tools {
         maven 'Maven-3.8.7'
-        sonarScanner 'SonarScanner' // Make sure this is configured in Jenkins tools
     }
 
     stages {
         stage('Clone Repository') {
             steps {
-                git credentialsId: 'GIT_CREDENTIALS', url: 'https://github.com/prathapchitra/spring-boot-mongo-docker.git', branch: 'master'
+                git credentialsId: 'GIT_CREDENTIALS',
+                    url: 'https://github.com/prathapchitra/spring-boot-mongo-docker.git',
+                    branch: 'master'
             }
         }
 
         stage('SonarQube Analysis') {
             steps {
-                withSonarQubeEnv('SonarQube') {
+                withSonarQubeEnv('Sonar') {
                     sh '''
                         sonar-scanner \
                           -Dsonar.projectKey=spring-boot-mongo \
@@ -50,7 +51,11 @@ pipeline {
 
         stage('Push Docker Image') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'DOCKER_HUB_PASSWORD', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                withCredentials([usernamePassword(
+                    credentialsId: 'DOCKER_HUB_PASSWORD',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
                     sh '''
                         echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
                         docker push ${DOCKER_IMAGE}
