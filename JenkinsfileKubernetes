@@ -11,8 +11,7 @@ pipeline {
     }
 
     tools {
-        maven 'Maven-3.8.7'
-        sonarQubeScanner 'Sonar'
+        maven 'Maven-3.8.7' // ✅ only Maven here
     }
 
     stages {
@@ -27,11 +26,11 @@ pipeline {
             steps {
                 withSonarQubeEnv('Sonar') {
                     sh '''
-                        sonar-scanner \
+                        ./mvnw clean verify sonar:sonar \
                           -Dsonar.projectKey=spring-boot-mongo \
-                          -Dsonar.sources=src \
-                          -Dsonar.java.binaries=target \
-                          -Dsonar.projectVersion=$VERSION
+                          -Dsonar.projectName=spring-boot-mongo \
+                          -Dsonar.projectVersion=$VERSION \
+                          -Dsonar.java.binaries=target
                     '''
                 }
             }
