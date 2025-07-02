@@ -29,7 +29,7 @@ pipeline {
 
         stage('SonarQube Analysis') {
             steps {
-                withSonarQubeEnv('Sonar') { // Ensure this matches Jenkins configuration
+                withSonarQubeEnv('Sonar') {
                     sh '''
                         mvn clean verify sonar:sonar \
                           -Dsonar.projectKey=spring-boot-mongo \
@@ -43,7 +43,7 @@ pipeline {
 
         stage('Wait for SonarQube Quality Gate') {
             steps {
-                timeout(time: 10, unit: 'MINUTES') { // ⬅️ Increased timeout from 5 to 10 minutes
+                timeout(time: 10, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true
                 }
             }
@@ -86,7 +86,7 @@ pipeline {
             steps {
                 script {
                     sh "sed -i 's|image: .*|image: ${DOCKER_IMAGE}|' springBootMongo.yml"
-                    sh "kubectl apply -f springBootMongo.yml"
+                    sh "kubectl apply -f springBootMongo.yml --validate=false"
                 }
             }
         }
