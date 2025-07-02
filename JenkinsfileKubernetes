@@ -8,6 +8,7 @@ pipeline {
         LATEST_IMAGE = "${IMAGE_NAME}:latest"
         K8S_DEPLOYMENT = 'spring-boot-app'
         K8S_NAMESPACE = 'default'
+        KUBECONFIG = '/root/.kube/config' // 👈 Added for Kubernetes access
     }
 
     tools {
